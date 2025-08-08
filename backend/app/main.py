@@ -1,9 +1,11 @@
 from fastapi import FastAPI
+from app.routes import kyc
 
-# Create FastAPI app
 app = FastAPI(title="Pyitupy Backend API", version="1.0")
 
-# Root endpoint
+# Include KYC routes
+app.include_router(kyc.router)
+
 @app.get("/")
 async def root():
     return {

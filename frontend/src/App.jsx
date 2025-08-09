@@ -6,6 +6,9 @@ import UploadBusiness from "./pages/UploadBusiness";
 import Scores from "./pages/Scores";
 import Marketplace from "./pages/Marketplace";
 import LoanApplication from "./pages/LoanApplication";
+import UnderReview from "./pages/UnderReview";
+import LoanFunding from "./pages/LoanFunding";
+import FundingConfirmation from "./pages/FundingConfirmation";
 
 
 export default function App() {
@@ -19,6 +22,9 @@ export default function App() {
           <Route path="/scores" element={<Scores />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/loan-application" element={<LoanApplication />} />
+          <Route path="/under-review" element={<UnderReview />} />
+          <Route path="/fund-loan/:loanId" element={<LoanFunding />} />
+          <Route path="/funding-confirmation" element={<FundingConfirmation />} />
         </Routes>
       </Layout>
     </Router>

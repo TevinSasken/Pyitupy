@@ -2,7 +2,6 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-
 export default function Upload() {
   const [formData, setFormData] = useState({});
   const navigate = useNavigate();
@@ -48,6 +47,10 @@ export default function Upload() {
       });
 
       setMessage(`✅ Success: ${res.data.message || "KYC uploaded"}`);
+
+      // Redirect to Loan Application page
+      navigate("/loan-application");
+
     } catch (err) {
       console.error(err);
       setMessage("❌ Upload failed. Check console.");

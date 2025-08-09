@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function LoanApplication() {
   const [formData, setFormData] = useState({
@@ -11,7 +12,7 @@ export default function LoanApplication() {
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -23,15 +24,13 @@ export default function LoanApplication() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setMessage("");
 
     try {
-      // Replace URL with backend endpoint
       await axios.post("http://127.0.0.1:8000/loans/apply", formData);
-      setMessage("✅ Loan application submitted successfully!");
+      navigate("/under-review"); // ✅ go to review page
     } catch (err) {
       console.error(err);
-      setMessage("❌ Failed to submit loan application.");
+      alert("❌ Failed to submit loan application.");
     } finally {
       setSubmitting(false);
     }
@@ -118,12 +117,10 @@ export default function LoanApplication() {
         <button
           type="submit"
           disabled={submitting}
-          className="bg-blue-600 hover:bg-blue-800 text-white px-6 py-2 rounded w-full"
+          className="!bg-blue-600 bg-opacity-100 hover:!bg-blue-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Submitting..." : "Submit Loan Application"}
         </button>
-
-        {message && <p className="mt-4 text-center">{message}</p>}
       </form>
     </div>
   );

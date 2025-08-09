@@ -2,7 +2,6 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-
 // Reusable Individual KYC Form for Owners
 const OwnerKYCForm = ({ ownerIndex }) => {
   const [socialMedia, setSocialMedia] = useState("");
@@ -266,6 +265,9 @@ export default function UploadBusiness() {
       });
 
       setMessage(`✅ Success: ${res.data.message || "Business KYC uploaded"}`);
+
+      // Redirect to Loan Application page
+      navigate("/loan-application");
     } catch (err) {
       console.error(err);
       setMessage("❌ Upload failed. Check console.");

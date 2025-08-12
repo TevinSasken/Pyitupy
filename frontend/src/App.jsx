@@ -9,6 +9,7 @@ import LoanApplication from "./pages/LoanApplication";
 import UnderReview from "./pages/UnderReview";
 import LoanFunding from "./pages/LoanFunding";
 import FundingConfirmation from "./pages/FundingConfirmation";
+import ConnectWallet from "./pages/ConnectWallet";
 
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/under-review" element={<UnderReview />} />
           <Route path="/fund-loan/:loanId" element={<LoanFunding />} />
           <Route path="/funding-confirmation" element={<FundingConfirmation />} />
+          <Route path="/connect-wallet/:loanId" element={<ConnectWallet/>}/>
         </Routes>
       </Layout>
     </Router>

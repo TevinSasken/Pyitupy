@@ -40,14 +40,14 @@ export default function Scores() {
       <div className="flex gap-4 mb-4">
         <button
           onClick={() => fetchScore("individual")}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          className="!bg-blue-600 bg-opacity-100 hover:!bg-blue-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           Get Individual Score
         </button>
         <button
           onClick={() => fetchScore("business")}
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+          className="!bg-blue-600 bg-opacity-100 hover:!bg-blue-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           Get Business Score

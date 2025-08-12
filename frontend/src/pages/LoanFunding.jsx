@@ -29,25 +29,23 @@ export default function LoanFunding() {
     fetchLoan();
   }, [loanId]);
 
-  const handleFunding = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError("");
+  const handleConfirmFunding = (e) => {
+    e?.preventDefault?.();
 
-    try {
-      await axios.post("http://127.0.0.1:8000/loans/fund", {
-        loan_id: Number(loanId), // ✅ match backend naming exactly
-        amount: parseFloat(fundAmount),
-        lender_wallet: "0xSampleLenderWallet" // ✅ placeholder wallet
-      });
-
-      navigate("/funding-confirmation");
-    } catch (err) {
-      console.error(err);
-      setError("Funding failed. Please try again.");
-    } finally {
-      setSubmitting(false);
+    // Basic validation
+    const amountNum = parseFloat(fundAmount);
+    if (Number.isNaN(amountNum) || amountNum <= 0) {
+      setError("Please enter a valid funding amount greater than 0.");
+      return;
     }
+
+    setError("");
+    // Navigate to ConnectWallet page, pass amount via state (more reliable than query string)
+    // Ensure route /connect-wallet/:loanId exists in your App routes
+    navigate(`/connect-wallet/${loanId}`, { state: { amount: amountNum } });
+
+    // If you prefer query string instead, you could do:
+    // navigate(`/connect-wallet/${loanId}?amount=${encodeURIComponent(amountNum)}`);
   };
 
   if (loading) return <p className="p-6">Loading loan details...</p>;
@@ -65,7 +63,8 @@ export default function LoanFunding() {
         <p><strong>Interest Rate:</strong> {loan.rate}%</p>
       </div>
 
-      <form onSubmit={handleFunding} className="space-y-4">
+      {/* Keep form styling for layout, but use a button click to navigate */}
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
         <div>
           <label className="block font-medium mb-1">Funding Amount</label>
           <input
@@ -79,8 +78,11 @@ export default function LoanFunding() {
           />
         </div>
 
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
         <button
-          type="submit"
+          type="button" /* important: use button (not submit) */
+          onClick={handleConfirmFunding}
           disabled={submitting}
           className="!bg-blue-600 bg-opacity-100 hover:!bg-blue-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >

@@ -1,93 +1,98 @@
 // src/pages/ConnectWallet.jsx
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
 export default function ConnectWallet() {
   const { loanId } = useParams();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const amount = searchParams.get("amount");
 
-  const [loan, setLoan] = useState(null);
-  const [walletAddress, setWalletAddress] = useState("");
+  // Form state
+  const [senderAddress, setSenderAddress] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
 
-  // Fetch loan details
-  useEffect(() => {
-    const fetchLoan = async () => {
-      try {
-        const res = await axios.get(`http://127.0.0.1:8000/loans/${loanId}`);
-        setLoan(res.data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load loan details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLoan();
-  }, [loanId]);
+  const ESCROW_ADDRESS = "0xYourEscrowWalletAddress"; // TODO: Replace with actual escrow wallet
 
-  // Connect to MetaMask
-  const connectWallet = async () => {
-    if (!window.ethereum) {
-      setError("MetaMask is not installed. Please install it first.");
+  const handleConfirmTransaction = async () => {
+    if (!senderAddress || !txHash) {
+      setError("Please enter your wallet address and transaction hash.");
       return;
     }
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
     try {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
+      // Send verification request to backend
+      const res = await axios.post("http://127.0.0.1:8000/verify-payment", {
+        loan_id: Number(loanId),
+        sender_wallet: senderAddress,
+        tx_hash: txHash,
       });
-      setWalletAddress(accounts[0]);
-      setError("");
+
+      setMessage(res.data.message || "Transaction verified successfully!");
     } catch (err) {
       console.error(err);
-      setError("Failed to connect wallet.");
+      setError(
+        err.response?.data?.detail || "Failed to verify transaction. Try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Proceed to funding page
-  const proceedToFunding = () => {
-    navigate(`/fund-loan/${loanId}`, { state: { lenderWallet: walletAddress } });
-  };
-
-  if (loading) return <p className="p-6">Loading loan details...</p>;
-  if (error) return <p className="p-6 text-red-600">{error}</p>;
-
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow rounded mt-10">
+      <h2 className="text-2xl font-bold mb-4 text-center">Fund Loan Payment</h2>
 
-      {loan && (
-        <div className="mb-6">
-          <p><strong>Borrower Wallet:</strong> {loan.wallet_address}</p>
-          <p><strong>Loan Amount Requested:</strong> ${loan.amount}</p>
-          <p><strong>Purpose:</strong> {loan.purpose}</p>
-          <p><strong>Repayment Period:</strong> {loan.repayment_period} months</p>
-          <p><strong>Interest Rate:</strong> {loan.rate}%</p>
-        </div>
-      )}
+      <div className="mb-6 p-4 bg-gray-100 rounded border">
+        <p><strong>Escrow Wallet Address:</strong> {ESCROW_ADDRESS}</p>
+        <p><strong>Amount (USDT):</strong> {amount}</p>
+        <p><strong>Network:</strong> Ethereum Mainnet</p>
+        <p className="mt-2 text-sm text-gray-500">
+          Please send exactly the above amount to the escrow wallet.
+        </p>
+      </div>
 
-      {!walletAddress ? (
-        <button
-          onClick={connectWallet}
-          className="!bg-blue-600 bg-opacity-100 hover:!bg-blue-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Connect Wallet
-        </button>
-      ) : (
+      <div className="space-y-4">
         <div>
-          <p className="mb-4 text-green-600">
-            ✅ Connected wallet: {walletAddress}
-          </p>
-          <button
-            onClick={proceedToFunding}
-            className="!bg-blue-600 bg-opacity-100 hover:!bg-blue-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Proceed to Funding
-          </button>
+          <label className="block font-medium mb-1">Your Wallet Address</label>
+          <input
+            type="text"
+            value={senderAddress}
+            onChange={(e) => setSenderAddress(e.target.value)}
+            placeholder="Enter the wallet you sent funds from"
+            className="border rounded p-2 w-full"
+          />
         </div>
-      )}
+
+        <div>
+          <label className="block font-medium mb-1">Transaction Hash</label>
+          <input
+            type="text"
+            value={txHash}
+            onChange={(e) => setTxHash(e.target.value)}
+            placeholder="Enter transaction hash"
+            className="border rounded p-2 w-full"
+          />
+        </div>
+
+        <button
+          onClick={handleConfirmTransaction}
+          disabled={loading}
+          className="!bg-green-600 bg-opacity-100 hover:!bg-green-800 text-white font-bold px-6 py-2 rounded shadow-lg border border-green-700 transition-all disabled:opacity-50"
+        >
+          {loading ? "Verifying..." : "Confirm Transaction"}
+        </button>
+      </div>
+
+      {error && <p className="mt-4 text-red-600">{error}</p>}
+      {message && <p className="mt-4 text-green-600">{message}</p>}
     </div>
   );
 }

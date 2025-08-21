@@ -74,17 +74,7 @@ Deployment
 
 Backend (Render)
 
-Connect backend repo to Render
-
-Add environment variables (DB credentials)
-
-Deploy automatically on push
-
 Frontend (Vercel)
-
-Connect frontend repo to Vercel
-
-Set API base URL to Render backend URL
 
 Contributors: Tevin Sasken
 Email address: mwauratevin@gmail.com

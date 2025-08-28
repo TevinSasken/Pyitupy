@@ -1,0 +1,12 @@
+{
+    "full_name": "John Doe",
+    "telephone_number": "+254700123456",
+    "physical_address": "Nairobi, Kenya.",
+    "email_address": "john@example.com",
+    "level_of_education": "Bachelor's Degree",
+    "social_media_handles": [
+        "@john_fb",
+        "@john_tw"
+    ],
+    "timestamp": "20250808163313"
+}

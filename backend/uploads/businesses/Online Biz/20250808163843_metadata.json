@@ -1,0 +1,12 @@
+{
+    "business_name": "Online Biz",
+    "business_type": "Limited Liability Company",
+    "owner_full_name": "John Does",
+    "business_physical_address": "Nairobi, Kenya",
+    "business_email": "john@example.com",
+    "business_phone": "0700001000",
+    "social_media_handles": [
+        "Twitter"
+    ],
+    "timestamp": "20250808163843"
+}

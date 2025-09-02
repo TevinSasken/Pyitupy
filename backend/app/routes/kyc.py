@@ -1,9 +1,23 @@
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from typing import List, Optional
-import os, json
 from datetime import datetime, timedelta
+import os, json, httpx
 
 router = APIRouter()
+
+STORAGE_SERVICE_URL = "http://localhost:4000/storage/upload"
+
+async def upload_to_storage(file: UploadFile) -> str:
+    """Send file to storage service and return rootHash."""
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            files = {"file": (file.filename, await file.read(), file.content_type)}
+            resp = await client.post(STORAGE_SERVICE_URL, files=files)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["rootHash"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload {file.filename}: {str(e)}")
 
 # =========================
 # Individual KYC Endpoint
@@ -27,24 +41,16 @@ async def submit_individual_kyc(
     social_media_handles: str = Form(None)
 ):
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    user_folder = os.path.join("uploads", "individuals", full_name.replace(" ", "_"))
-    os.makedirs(user_folder, exist_ok=True)
-
-    def save_file(file: UploadFile):
-        file_path = os.path.join(user_folder, f"{timestamp}_{file.filename}")
-        with open(file_path, "wb") as f:
-            f.write(file.file.read())
-        return file_path
 
     saved_files = {
-        "national_id_passport": save_file(national_id_passport),
-        "tax_pin_certificate": save_file(tax_pin_certificate),
-        "tax_file_records": save_file(tax_file_records),
-        "crb_report": save_file(crb_report),
-        "mobile_money_statement": save_file(mobile_money_statement),
-        "selfie": save_file(selfie),
-        "mpesa_hakikisha": save_file(mpesa_hakikisha),
-        "pay_slips": [save_file(ps) for ps in pay_slips]
+        "national_id_passport": await upload_to_storage(national_id_passport),
+        "tax_pin_certificate": await upload_to_storage(tax_pin_certificate),
+        "tax_file_records": await upload_to_storage(tax_file_records),
+        "crb_report": await upload_to_storage(crb_report),
+        "mobile_money_statement": await upload_to_storage(mobile_money_statement),
+        "selfie": await upload_to_storage(selfie),
+        "mpesa_hakikisha": await upload_to_storage(mpesa_hakikisha),
+        "pay_slips": [await upload_to_storage(ps) for ps in pay_slips]
     }
 
     metadata = {
@@ -54,16 +60,20 @@ async def submit_individual_kyc(
         "email_address": email_address,
         "level_of_education": level_of_education,
         "social_media_handles": [h.strip() for h in (social_media_handles or "").split(",") if h.strip()],
-        "timestamp": timestamp
+        "timestamp": timestamp,
+        "files": saved_files
     }
 
+    # still saving metadata locally (optional)
+    user_folder = os.path.join("uploads", "individuals", full_name.replace(" ", "_"))
+    os.makedirs(user_folder, exist_ok=True)
     meta_file_path = os.path.join(user_folder, f"{timestamp}_metadata.json")
-    with open(meta_file_path, "w") as mf:
+    with open(meta_file_path, "w", encoding="utf-8") as mf:
         json.dump(metadata, mf, indent=4)
 
     return {
         "status": "success",
-        "message": f"KYC data for {full_name} saved successfully.",
+        "message": f"KYC data for {full_name} submitted successfully.",
         "files_saved": saved_files,
         "metadata_file": meta_file_path
     }
@@ -72,22 +82,8 @@ async def submit_individual_kyc(
 # Business KYC Endpoint
 # =========================
 
-BASE_UPLOAD = os.path.join("uploads", "businesses")
-os.makedirs(BASE_UPLOAD, exist_ok=True)
-
-def save_file_to_folder(file: UploadFile, folder: str, timestamp: str) -> str:
-    os.makedirs(folder, exist_ok=True)
-    safe_name = file.filename.replace(" ", "_")
-    out_path = os.path.join(folder, f"{timestamp}_{safe_name}")
-    with open(out_path, "wb") as f:
-        f.write(file.file.read())
-    return out_path
-
 def categorize_owner_files(files: List[UploadFile]) -> dict:
-    """
-    Categorizes owner files based on filename pattern:
-    owner{index}_{doc_key}[_{seq}].ext
-    """
+    """Categorizes owner files based on filename pattern: owner{index}_{doc_key}[_{seq}].ext"""
     owners = {}
     for f in files or []:
         name = f.filename
@@ -181,16 +177,11 @@ async def submit_business_kyc(
             raise HTTPException(status_code=400, detail="company_cr12_date must be YYYY-MM-DD")
 
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-    business_folder = os.path.join(BASE_UPLOAD, business_name.replace(" ", "_"))
-    business_docs_folder = os.path.join(business_folder, "business_docs")
-    owners_folder_base = os.path.join(business_folder, "owners")
-    os.makedirs(business_docs_folder, exist_ok=True)
-    os.makedirs(owners_folder_base, exist_ok=True)
 
     saved_business_files = {}
     for key, file_obj in business_files_map.items():
         if file_obj:
-            saved_business_files[key] = save_file_to_folder(file_obj, business_docs_folder, timestamp)
+            saved_business_files[key] = await upload_to_storage(file_obj)
 
     owners_files_map = categorize_owner_files(owners_files)
     saved_owners = []
@@ -199,10 +190,6 @@ async def submit_business_kyc(
         if not owner_name:
             raise HTTPException(status_code=400, detail=f"Owner {idx} missing full_name")
 
-        owner_folder = os.path.join(owners_folder_base, owner_name.replace(" ", "_"))
-        os.makedirs(owner_folder, exist_ok=True)
-
-        # Minimal owner doc validation
         owner_files_for_idx = owners_files_map.get(idx, {})
         missing_owner_docs = []
         if "national_id_passport" not in owner_files_for_idx:
@@ -216,25 +203,19 @@ async def submit_business_kyc(
         for key, file_list in owner_files_for_idx.items():
             saved_files[key] = []
             for f in file_list:
-                saved_path = save_file_to_folder(f, owner_folder, timestamp)
-                saved_files[key].append(saved_path)
-
-        owner_meta_path = os.path.join(owner_folder, f"{timestamp}_owner_metadata.json")
-        with open(owner_meta_path, "w", encoding="utf-8") as omf:
-            json.dump(owner_meta, omf, indent=2)
+                saved_files[key].append(await upload_to_storage(f))
 
         saved_owners.append({
             "owner_index": idx,
             "owner_name": owner_name,
             "saved_files": saved_files,
-            "metadata_file": owner_meta_path
+            "metadata": owner_meta
         })
 
     return {
         "status": "success",
         "business_name": business_name,
         "business_type": business_type,
-        "business_docs_folder": business_docs_folder,
         "saved_business_files": saved_business_files,
         "owners": saved_owners
     }

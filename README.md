@@ -11,6 +11,8 @@ The backend manages loan records and funding logic, while the frontend provides 
 - FastAPI backend with PostgreSQL database.
 - React + Vite frontend deployed on Vercel.
 - Backend deployed on Render.
+- Decentralized storage with 0G storage
+- Smart contract deployment with 0G chain
 
 ---
 
@@ -29,7 +31,20 @@ Pyitupy/
 │ ├── src/pages/ # React pages (Marketplace, LoanFunding, ConnectWallet, etc.)
 │ ├── package.json # Frontend dependencies
 │ └── vite.config.js # Vite configuration
+|── 0g-storage-microservice
+| |── node_modules
+| └── src/server.js
 │
+|── pyitupy-contracts
+| |── artifacts
+| |── cache
+| |── contracts 
+| |──ignition
+| |── node_modules
+| |── scripts
+| |── test
+| └── types
+|
 └── README.md # Project documentation
 
 
